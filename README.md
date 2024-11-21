@@ -41,7 +41,7 @@ packages:
   remote_package_files:
     url: https://github.com/bennydiamond/elegrp_dtr10_dtr30_esphome_template
     files: [.base.elegrp.dtr10_dtr30_template.yaml]  # optional; if not specified, all files will be included
-    ref: main  # optional
+    ref: master  # optional
     refresh: 1d  # optional
     vars:
       device_name: "my-dtr30-dimmer"
