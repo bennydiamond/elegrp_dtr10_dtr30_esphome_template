@@ -37,21 +37,22 @@ Include this package and populate the necessary variables.
 
 Example of a device YAML file:
 ```
+substitutions:
+  device_name: "my-dtr30-dimmer"
+  device_friendly_name: "Dimmer"
+  api_key: "supersecretapikey"
+  ota_password: "otapsswd"
+  hotspot_name: "DTR30-dimmer-AP"
+  hotspot_password: !secret fallback_hotspot_password
+  log_level: "INFO"
+  indicator_brightness_when_offline_percent: '100'
+
 packages:
   remote_package_files:
     url: https://github.com/bennydiamond/elegrp_dtr10_dtr30_esphome_template
     files: [.base.elegrp.dtr10_dtr30_template.yaml]  # optional; if not specified, all files will be included
     ref: master  # optional
     refresh: 1d  # optional
-    vars:
-      device_name: "my-dtr30-dimmer"
-      device_friendly_name: "Dimmer"
-      api_key: "supersecretapikey"
-      ota_password: "otapsswd"
-      hotspot_name: "DTR30-dimmer-AP"
-      hotspot_password: !secret fallback_hotspot_password
-      log_level: "INFO"
-      indicator_brightness_when_offline_percent: '100'
 ```
 
 ## Customization
@@ -59,10 +60,11 @@ packages:
 Refer to ESPHome's documentation on [packages](https://esphome.io/components/packages) to customize your device.
 
 ### Example of customization. 
-To remove the Web server component from your device, you would just need to add the following at the bottom of your device's yaml file.
+To remove the Fallback Wifi Hotspot component from your device, you would just need to add the following at the bottom of your device's yaml file.
 
 ```
-web_server: !remove
+wifi:
+  ap: !remove
 ```
 
 To set static IP.
