@@ -64,6 +64,11 @@ sensor:
     entity_category: diagnostic
     web_server:
       sorting_weight: 202
+  - platform: internal_temperature
+    name: "CPU Temperature"
+    entity_category: diagnostic
+    web_server:
+      sorting_weight: 210
 
 text_sensor:
   - platform: tuya
