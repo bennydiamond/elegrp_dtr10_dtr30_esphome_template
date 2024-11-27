@@ -125,6 +125,7 @@ number:
   - platform: tuya
     number_datapoint: 2
     name: "Dimmer Brightness control"
+    id: dimmer_brightness_control
     min_value: 1
     max_value: 100
     step: 1
@@ -226,6 +227,7 @@ select:
 light:
   - platform: tuya
     name: "Dimmer"
+    id: dimmer
     dimmer_datapoint: 2
     min_value_datapoint: 2
     max_value: 1000
