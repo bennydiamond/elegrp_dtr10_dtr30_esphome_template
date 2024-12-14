@@ -36,7 +36,7 @@ Information on how to program is located on [Elektroda's forums](https://www.ele
 Include this package and populate the necessary variables.
 
 Example of a device YAML file:
-```
+```yaml
 substitutions:
   device_name: "my-dtr30-dimmer"
   device_friendly_name: "Dimmer"
@@ -62,13 +62,13 @@ Refer to ESPHome's documentation on [packages](https://esphome.io/components/pac
 ### Example of customization. 
 To remove the Fallback Wifi Hotspot component from your device, you would just need to add the following at the bottom of your device's yaml file.
 
-```
+```yaml
 wifi:
   ap: !remove
 ```
 
 To set static IP.
-```
+```yaml
 wifi:
   manual_ip:
     static_ip: 192.168.1.10
