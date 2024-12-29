@@ -99,6 +99,18 @@ text_sensor:
       entity_category: diagnostic
       web_server:
         sorting_weight: 204
+  - platform: template
+    name: "Wifi Channel"
+    entity_category: diagnostic
+    web_server:
+        sorting_weight: 205
+    lambda: |-
+      std::string out;
+      char buffer[10];
+      snprintf(buffer, 10, "%u", WiFi.channel());
+      out.append(buffer);
+      return out;
+    update_interval: 60s
 
 button:
   - platform: restart
