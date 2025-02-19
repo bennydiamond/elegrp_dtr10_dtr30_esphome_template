@@ -66,6 +66,7 @@ sensor:
       sorting_weight: 202
   - platform: internal_temperature
     name: "CPU Temperature"
+    id: id_sensor_internal_temperature
     entity_category: diagnostic
     web_server:
       sorting_weight: 210
@@ -115,6 +116,7 @@ text_sensor:
 button:
   - platform: restart
     name: "Device Restart"
+    id: id_button_device_restart
     web_server:
       sorting_weight: 300
 
@@ -128,6 +130,7 @@ switch:
   - platform: tuya
     switch_datapoint: 114
     name: "Set Brightness Min"
+    id: id_switch_set_brightness_min
     entity_category: config
     web_server:
       sorting_weight: 11
@@ -148,6 +151,7 @@ number:
   - platform: tuya
     number_datapoint: 108
     name: "Longpress Brightness"
+    id: id_number_longpress_brightness
     min_value: 10
     max_value: 1000
     step: 1
@@ -167,6 +171,7 @@ number:
   - platform: tuya
     number_datapoint: 5
     name: "Brightness Max"
+    id: id_number_brightness_max
     min_value: 550
     max_value: 1000
     step: 1
@@ -177,6 +182,7 @@ number:
   - platform: tuya
     number_datapoint: 3
     name: "Brightness Min"
+    id: id_number_brightness_min
     min_value: 0
     max_value: 500
     step: 1
@@ -202,6 +208,7 @@ select:
   - platform: tuya
     enum_datapoint: 103
     name: "Fade On Speed"
+    id: id_select_fade_on_speed
     optimistic: true
     options:
       0: "Immediate"
@@ -214,6 +221,7 @@ select:
   - platform: tuya
     enum_datapoint: 104
     name: "Fade Off Speed"
+    id: id_select_fade_off_speed
     optimistic: true
     options:
       0: "Immediate"
@@ -226,6 +234,7 @@ select:
   - platform: tuya
     enum_datapoint: 4
     name: "Bulb Type"
+    id: id_select_bulb_type
     optimistic: true
     options:
       0: "Cfl"
