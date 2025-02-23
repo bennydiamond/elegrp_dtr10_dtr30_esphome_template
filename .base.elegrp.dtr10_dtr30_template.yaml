@@ -122,6 +122,7 @@ button:
 
 tuya:
   # DPIDs processed from schema model: 000004ngxw
+  id: id_tuya_device
 
 switch:
   #- platform: tuya
@@ -256,3 +257,11 @@ light:
     web_server:
       sorting_weight: -1
 
+interval:
+  # Workaround for rare occasions whenre indicator brightness is not being taken in by TuyaMCU
+  - interval: 1min
+    startup_delay: 1min
+    then:
+      - lambda: |-
+          id(id_tuya_device).force_set_integer_datapoint_value(101, id(indicator_brightness).state);
+          
