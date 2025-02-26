@@ -11,8 +11,6 @@ bk72xx:
 # Enable Home Assistant API
 api:
   id: id_esphome_api
-  encryption:
-    key: ${api_key}
   # If device disconnected from API for 10 minutes, turn off the indicator LEDs.
   on_client_disconnected:
     if:
@@ -30,7 +28,6 @@ api:
 ota:
   - platform: esphome
     id: id_esphome_ota
-    password: ${ota_password}
 
 wifi:
   ssid: !secret wifi_ssid
@@ -38,23 +35,10 @@ wifi:
   # Power save on LibreTiny is boolean so HIGH or LIGHT have the same effect
   power_save_mode: HIGH
 
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: ${hotspot_name}
-    password: ${hotspot_password}
-
-captive_portal:
-  id: id_captive_portal
-
 # Enable logging
 logger:
   level: ${log_level}
   baud_rate: 0 # Disable log to uart because using Uart for TuyaMCU
-
-web_server:
-  port: 80
-  version: 3
-  id: id_web_server
 
 uart:
   rx_pin: RX1
@@ -66,49 +50,33 @@ sensor:
     name: "WiFi RSSI"
     update_interval: 60s
     entity_category: diagnostic
-    web_server:
-      sorting_weight: 202
   - platform: internal_temperature
     name: "CPU Temperature"
     id: id_sensor_internal_temperature
     entity_category: diagnostic
-    web_server:
-      sorting_weight: 210
 
 text_sensor:
   - platform: tuya
     name: "TuyaMCU Version"
     sensor_datapoint: 113
     entity_category: diagnostic
-    web_server:
-      sorting_weight: 100
   - platform: tuya
     name: "Hardware Version"
     sensor_datapoint: 109
     entity_category: diagnostic
-    web_server:
-      sorting_weight: 101
   - platform: wifi_info
     ssid:
       name: "WiFi SSID"
       entity_category: diagnostic
-      web_server:
-        sorting_weight: 201
     ip_address:
       name: "IP Address"
       entity_category: diagnostic
-      web_server:
-        sorting_weight: 203
     mac_address:
       name: "MAC Address"
       entity_category: diagnostic
-      web_server:
-        sorting_weight: 204
   - platform: template
     name: "Wifi Channel"
     entity_category: diagnostic
-    web_server:
-        sorting_weight: 205
     lambda: |-
       std::string out;
       char buffer[10];
@@ -121,8 +89,6 @@ button:
   - platform: restart
     name: "Device Restart"
     id: id_button_device_restart
-    web_server:
-      sorting_weight: 300
 
 tuya:
   # DPIDs processed from schema model: 000004ngxw
@@ -137,8 +103,6 @@ switch:
     name: "Set Brightness Min"
     id: id_switch_set_brightness_min
     entity_category: config
-    web_server:
-      sorting_weight: 11
 
 number:
   # Allows for setting brightness value without turning the light ON
@@ -151,8 +115,6 @@ number:
     step: 1
     # TuyaMCU scale is 10 to 1000
     multiply: 10 
-    web_server:
-      sorting_weight: 0
   - platform: tuya
     number_datapoint: 108
     name: "Longpress Brightness"
@@ -161,8 +123,6 @@ number:
     max_value: 1000
     step: 1
     entity_category: config
-    web_server:
-      sorting_weight: 1
   - platform: tuya
     number_datapoint: 101
     name: "Indicator Brightness"
@@ -171,8 +131,6 @@ number:
     max_value: 100
     step: 1
     entity_category: config
-    web_server:
-      sorting_weight: 2
   - platform: tuya
     number_datapoint: 5
     name: "Brightness Max"
@@ -181,8 +139,6 @@ number:
     max_value: 1000
     step: 1
     entity_category: config
-    web_server:
-      sorting_weight: 10
   # User must activate "Set Brightness Min" switch before changing the value of this
   - platform: tuya
     number_datapoint: 3
@@ -192,8 +148,6 @@ number:
     max_value: 500
     step: 1
     entity_category: config
-    web_server:
-      sorting_weight: 12
   #- platform: tuya
   #  number_datapoint: 6
   #  name: "Countdown 1"
@@ -221,8 +175,6 @@ select:
       2: "Medium" # 5s
       3: "Slow"   # 15s
     entity_category: config
-    web_server:
-      sorting_weight: 20
   - platform: tuya
     enum_datapoint: 104
     name: "Fade Off Speed"
@@ -234,8 +186,6 @@ select:
       2: "Medium" # 5s
       3: "Slow"   # 15s
     entity_category: config
-    web_server:
-      sorting_weight: 21
   - platform: tuya
     enum_datapoint: 4
     name: "Bulb Type"
@@ -247,8 +197,6 @@ select:
       2: "Halogen"
       3: "Led"
     entity_category: config
-    web_server:
-      sorting_weight: 30
 
 light:
   - platform: tuya
@@ -258,8 +206,6 @@ light:
     min_value_datapoint: 2
     max_value: 1000
     switch_datapoint: 1
-    web_server:
-      sorting_weight: -1
 
 interval:
   # Workaround for rare occasions whenre indicator brightness is not being taken in by TuyaMCU

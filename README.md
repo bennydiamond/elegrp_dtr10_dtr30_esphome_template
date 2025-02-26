@@ -9,6 +9,12 @@ Adds a couple extra features:
 - If disconnected from API for 10 minutes straight, reset LED indicator bar brightness to a preset value 
 - Added a number input slider to set Dimmer's brightness without actually turning the light ON
 
+This is a leaner variant over the main template with a few components removed or modified:
+- Removed API encryption
+- Removed OTA password
+- Removed Web Server
+- Removed fallback Hotspot and captive portal
+- Wifi power save mode enabled
 
 
 # Initial device programming
