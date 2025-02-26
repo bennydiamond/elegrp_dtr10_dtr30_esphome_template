@@ -10,6 +10,7 @@ bk72xx:
 
 # Enable Home Assistant API
 api:
+  id: id_esphome_api
   encryption:
     key: ${api_key}
   # If device disconnected from API for 10 minutes, turn off the indicator LEDs.
@@ -28,6 +29,7 @@ api:
 
 ota:
   - platform: esphome
+    id: id_esphome_ota
     password: ${ota_password}
 
 wifi:
@@ -42,6 +44,7 @@ wifi:
     password: ${hotspot_password}
 
 captive_portal:
+  id: id_captive_portal
 
 # Enable logging
 logger:
@@ -51,6 +54,7 @@ logger:
 web_server:
   port: 80
   version: 3
+  id: id_web_server
 
 uart:
   rx_pin: RX1
