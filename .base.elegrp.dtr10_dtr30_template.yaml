@@ -8,6 +8,14 @@ esphome:
 bk72xx:
   board: cb2s
 
+external_components:
+  # use rtttl and dfplayer from ESPHome's dev branch in GitHub
+  - source:
+      type: git
+      url: https://github.com/bennydiamond/esphome
+      ref: tuya_cmd_public
+    components: [ tuya ]
+
 # Enable Home Assistant API
 api:
   id: id_esphome_api
