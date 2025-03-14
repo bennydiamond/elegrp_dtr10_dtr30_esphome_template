@@ -15,12 +15,6 @@ external_components:
       url: https://github.com/bennydiamond/esphome
       ref: tuya_cmd_public
     components: [ tuya ]
-
-interval:
-  - interval: 20s
-    startup_delay: 1min
-    then:
-      - lambda: id(id_tuya_device).force_send_wifi_status(0x04);
       
 # Enable Home Assistant API
 api:
@@ -222,6 +216,11 @@ light:
     switch_datapoint: 1
 
 interval:
+  # Workaround (attempt) for when ESPHome seemingly stops sending WIFI status message to TuyaMCU and status LED turns blinking red.
+  - interval: 20s
+    startup_delay: 1min
+    then:
+      - lambda: id(id_tuya_device).force_send_wifi_status(0x04);
   # Workaround for rare occasions whenre indicator brightness is not being taken in by TuyaMCU
   - interval: 1min
     startup_delay: 1min
