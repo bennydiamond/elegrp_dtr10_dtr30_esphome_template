@@ -16,6 +16,12 @@ external_components:
       ref: tuya_cmd_public
     components: [ tuya ]
 
+interval:
+  - interval: 20s
+    startup_delay: 1min
+    then:
+      - lambda: id(id_tuya_device).force_send_wifi_status(0x04);
+      
 # Enable Home Assistant API
 api:
   id: id_esphome_api
