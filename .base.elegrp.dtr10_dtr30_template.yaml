@@ -7,7 +7,7 @@ esphome:
   friendly_name: ${device_friendly_name}
   project:
     name: elegrp.dtr10_dtr30_template
-    version: "1.0"
+    version: "1.1"
 
 bk72xx:
   board: cb2s
