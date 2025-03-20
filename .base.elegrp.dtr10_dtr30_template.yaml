@@ -1,3 +1,7 @@
+substitutions:
+  api_disconnect_reboot_timeout: "15min"
+  wifi_disconnect_reboot_timeout: "15min"
+
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
@@ -19,6 +23,7 @@ external_components:
 # Enable Home Assistant API
 api:
   id: id_esphome_api
+  reboot_timeout: ${api_disconnect_reboot_timeout}
   # If device disconnected from API for 10 minutes, turn off the indicator LEDs.
   on_client_disconnected:
     if:
@@ -42,6 +47,7 @@ wifi:
   password: !secret wifi_password
   # Power save on LibreTiny is boolean so HIGH or LIGHT have the same effect
   power_save_mode: HIGH
+  reboot_timeout: ${wifi_disconnect_reboot_timeout}
 
 # Enable logging
 logger:
