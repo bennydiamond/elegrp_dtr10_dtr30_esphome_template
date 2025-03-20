@@ -43,11 +43,18 @@ ota:
     id: id_esphome_ota
 
 wifi:
+  id: id_esphome_wifi
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   # Power save on LibreTiny is boolean so HIGH or LIGHT have the same effect
   power_save_mode: HIGH
   reboot_timeout: ${wifi_disconnect_reboot_timeout}
+  ap:
+    ssid: ${hotspot_name}
+    password: ${hotspot_password}
+
+captive_portal:
+  id: id_captive_portal
 
 # Enable logging
 logger:
