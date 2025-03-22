@@ -1,13 +1,15 @@
 substitutions:
   api_disconnect_reboot_timeout: "15min"
   wifi_disconnect_reboot_timeout: "15min"
+  wifi_power_save_mode: "NONE"
+  wifi_ap_timout: "5min"
 
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   project:
     name: elegrp.dtr10_dtr30_template
-    version: "1.1"
+    version: "1.2"
 
 bk72xx:
   board: cb2s
@@ -47,11 +49,11 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   # Power save on LibreTiny is boolean so HIGH or LIGHT have the same effect
-  power_save_mode: HIGH
+  power_save_mode: ${wifi_power_save_mode}
   reboot_timeout: ${wifi_disconnect_reboot_timeout}
   ap:
     ssid: ${hotspot_name}
-    password: ${hotspot_password}
+    ap_timeout: ${wifi_ap_timout}
 
 captive_portal:
   id: id_captive_portal
