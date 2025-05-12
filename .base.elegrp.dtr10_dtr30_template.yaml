@@ -1,21 +1,17 @@
-substitutions:
-  api_disconnect_reboot_timeout: "15min"
-  wifi_disconnect_reboot_timeout: "15min"
-  wifi_power_save_mode: "NONE"
-  wifi_ap_timout: "5min"
-
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   project:
     name: elegrp.dtr10_dtr30_template
-    version: "1.2"
+    version: "1.3mqtt"
   platformio_options:
     build_flags:
       - -DLWIP_DHCP_DOES_ACD_CHECK=0 # fix for https://github.com/libretiny-eu/libretiny/issues/316
 
 bk72xx:
   board: cb2s
+  framework:
+    version: 1.8.0
 
 external_components:
   # use rtttl and dfplayer from ESPHome's dev branch in GitHub
@@ -26,18 +22,39 @@ external_components:
     components: [ tuya ]
       
 # Enable Home Assistant API
-api:
-  id: id_esphome_api
-  reboot_timeout: ${api_disconnect_reboot_timeout}
-  # If device disconnected from API for 10 minutes, turn off the indicator LEDs.
-  on_client_disconnected:
+#api:
+#  id: id_esphome_api
+#  reboot_timeout: ${api_disconnect_reboot_timeout}
+#  # If device disconnected from API for 10 minutes, turn off the indicator LEDs.
+#  on_client_disconnected:
+#    if:
+#      condition:
+#        for:
+#          time: 10min
+#          condition:
+#            not:
+#              api.connected:
+#      then:
+#        - number.set:
+#            id: indicator_brightness
+#            value: ${indicator_brightness_when_offline_percent}
+
+mqtt:
+  id: id_mqtt_broker
+  broker: 192.168.0.250
+  port: 1883
+  username: esphome
+  password: esphome
+  topic_prefix: "esphome/${device_name}"
+  discovery_unique_id_generator: mac
+  on_disconnect:
     if:
       condition:
         for:
           time: 10min
           condition:
             not:
-              api.connected:
+              mqtt.connected:
       then:
         - number.set:
             id: indicator_brightness
@@ -47,22 +64,24 @@ ota:
   - platform: esphome
     id: id_esphome_ota
 
-wifi:
-  id: id_esphome_wifi
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  # Power save on LibreTiny is boolean so HIGH or LIGHT have the same effect
-  power_save_mode: ${wifi_power_save_mode}
-  reboot_timeout: ${wifi_disconnect_reboot_timeout}
-  ap:
-    ssid: ${hotspot_name}
-    ap_timeout: ${wifi_ap_timout}
-
 captive_portal:
   id: id_captive_portal
 
+web_server:
+  id: id_web_server
+  include_internal: True
+  
+mdns:
+  id: id_mdns
+  disabled: True
+  
+debug:
+  id: id_debug
+  update_interval: 30s
+
 # Enable logging
 logger:
+  id: id_logger
   level: ${log_level}
   baud_rate: 0 # Disable log to uart because using Uart for TuyaMCU
 
@@ -80,41 +99,148 @@ sensor:
     name: "CPU Temperature"
     id: id_sensor_internal_temperature
     entity_category: diagnostic
+  - platform: uptime
+    type: seconds
+    name: Uptime
+  - platform: debug
+    free:
+      name: "Heap Free"
+    loop_time:
+      name: "Loop Time"
+#  - platform: homeassistant
+#    name: "HA desired indicator brightness value"
+#    internal: True # Explicitely defined but set like that for obvious reasons!
+#    entity_id: input_number.dimmer_switch_indicator_level_main_rdc
+  - platform: mqtt_subscribe
+    name: "HA desired indicator brightness value"
+    topic: ${indicator_brightness_topic}
+    on_value: 
+      then:
+        - number.set:
+            id: indicator_brightness
+            value: !lambda "return x;"
 
-text_sensor:
-  - platform: tuya
-    name: "TuyaMCU Version"
-    sensor_datapoint: 113
-    entity_category: diagnostic
-  - platform: tuya
-    name: "Hardware Version"
-    sensor_datapoint: 109
-    entity_category: diagnostic
-  - platform: wifi_info
-    ssid:
-      name: "WiFi SSID"
-      entity_category: diagnostic
-    ip_address:
-      name: "IP Address"
-      entity_category: diagnostic
-    mac_address:
-      name: "MAC Address"
-      entity_category: diagnostic
-  - platform: template
-    name: "Wifi Channel"
-    entity_category: diagnostic
-    lambda: |-
-      std::string out;
-      char buffer[10];
-      snprintf(buffer, 10, "%u", WiFi.channel());
-      out.append(buffer);
-      return out;
-    update_interval: 60s
+binary_sensor:
+  - platform: gpio
+    name: "Paddle up"
+    id: input_paddle_up_button
+    internal: True # not wired for now
+    pin:
+      number: P6
+      inverted: True
+      mode:
+        input: true
+        pullup: false
+    filters:
+      settle: 50ms
+    on_multi_click: 
+      - timing: 
+          - ON for ${multiclick_min_length} to ${multiclick_max_length}
+          - OFF for at least ${multiclick_max_length}
+        then:
+          - mqtt.publish:
+              topic: esphome/${device_name}/button_pressed
+              payload: "up_singleclick"
+      - timing:
+          - ON for ${multiclick_min_length} to ${multiclick_max_length}
+          - OFF for ${multiclick_min_length} to ${multiclick_max_length}
+          - ON for ${multiclick_min_length} to ${multiclick_max_length}
+          - OFF for at least ${multiclick_max_length}
+        then:
+          - mqtt.publish:
+              topic: esphome/${device_name}/button_pressed
+              payload: "up_doubleclick"
+      - timing: 
+          - ON for at least ${longpress_min_length}
+        then:
+          - mqtt.publish:
+              topic: esphome/${device_name}/button_pressed
+              payload: "up_longpress"
+      - timing: 
+          - ON for at least ${longpress_reboot_timeout}
+        then:
+          - button.press:
+              id: id_button_device_restart_safe_mode
+
+  - platform: gpio
+    name: "Paddle down"
+    id: input_paddle_down_button
+    internal: True # not wired for now
+    pin:
+      number: P23
+      inverted: True
+      mode:
+        input: true
+        pullup: false
+    filters:
+      settle: 50ms
+    on_multi_click: 
+      - timing: 
+          - ON for ${multiclick_min_length} to ${multiclick_max_length}
+          - OFF for at least ${multiclick_max_length}
+        then:
+          - mqtt.publish:
+              topic: esphome/${device_name}/button_pressed
+              payload: "down_singleclick"
+      - timing:
+          - ON for ${multiclick_min_length} to ${multiclick_max_length}
+          - OFF for ${multiclick_min_length} to ${multiclick_max_length}
+          - ON for ${multiclick_min_length} to ${multiclick_max_length}
+          - OFF for at least ${multiclick_max_length}
+        then:
+          - mqtt.publish:
+              topic: esphome/${device_name}/button_pressed
+              payload: "down_doubleclick"
+      - timing: 
+          - ON for at least ${longpress_min_length}
+        then:
+          - mqtt.publish:
+              topic: esphome/${device_name}/button_pressed
+              payload: "down_longpress"
+      - timing: 
+          - ON for at least ${longpress_reboot_timeout}
+        then:
+          - button.press:
+              id: id_button_device_restart
+
+
+#text_sensor:
+#  - platform: tuya
+#    name: "TuyaMCU Version"
+#    sensor_datapoint: 113
+#    entity_category: diagnostic
+#  - platform: tuya
+#    name: "Hardware Version"
+#    sensor_datapoint: 109
+#    entity_category: diagnostic
+#  - platform: wifi_info
+#    ssid:
+#      name: "WiFi SSID"
+#      entity_category: diagnostic
+#    ip_address:
+#      name: "IP Address"
+#      entity_category: diagnostic
+#    mac_address:
+#      name: "MAC Address"
+#      entity_category: diagnostic
+#  - platform: template
+#    name: "Wifi Channel"
+#    entity_category: diagnostic
+#    lambda: |-
+#      std::string out;
+#      char buffer[10];
+#      snprintf(buffer, 10, "%u", WiFi.channel());
+#      out.append(buffer);
+#      return out;
+#    update_interval: 60s
 
 button:
   - platform: restart
     name: "Device Restart"
     id: id_button_device_restart
+  - platform: safe_mode
+    name: "Device Restart (Safe Mode)"
+    id: id_button_device_restart_safe_mode
 
 tuya:
   # DPIDs processed from schema model: 000004ngxw
