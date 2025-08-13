@@ -1,17 +1,22 @@
+substitutions:
+  default_log_level: "INFO"
+  toggle_log_level_timeout_hours: "24"
+  syslog_server_port: "514"
+  syslog_log_level: "INFO"
+  syslog_time_esphome_id: "id_time_esphome_component"
+  
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   project:
     name: elegrp.dtr10_dtr30_template
-    version: "1.3mqtt"
+    version: "1.4mqtt"
   platformio_options:
     build_flags:
       - -DLWIP_DHCP_DOES_ACD_CHECK=0 # fix for https://github.com/libretiny-eu/libretiny/issues/316
 
 bk72xx:
   board: cb2s
-  framework:
-    version: 1.8.0
 
 external_components:
   # use rtttl and dfplayer from ESPHome's dev branch in GitHub
@@ -41,10 +46,10 @@ external_components:
 
 mqtt:
   id: id_mqtt_broker
-  broker: 192.168.0.250
-  port: 1883
-  username: esphome
-  password: esphome
+  broker: ${mqtt_broker_ip}
+  port: ${mqtt_broker_port}
+  username: ${mqtt_username}
+  password: ${mqtt_password}
   topic_prefix: "esphome/${device_name}"
   discovery_unique_id_generator: mac
   on_disconnect:
@@ -82,9 +87,21 @@ debug:
 # Enable logging
 logger:
   id: id_logger
-  level: ${log_level}
+  level: DEBUG
+  initial_level: ${default_log_level}
   baud_rate: 0 # Disable log to uart because using Uart for TuyaMCU
 
+udp:
+  - id: id_udp_syslog_server
+    addresses: ${syslog_server_ip}
+
+syslog:
+  udp_id: id_udp_syslog_server
+  time_id: ${syslog_time_esphome_id} # must be defined in local yaml config
+  port: ${syslog_server_port}
+  strip: true # remove color code
+  level: ${syslog_log_level}
+  
 uart:
   rx_pin: RX1
   tx_pin: TX1
@@ -255,6 +272,24 @@ switch:
     name: "Set Brightness Min"
     id: id_switch_set_brightness_min
     entity_category: config
+  - platform: template
+    name: Debug Log Level Enabled
+    id: id_switch_debug_logs_enabled
+    restore_mode : ALWAYS_OFF
+    lambda: 'return id(id_logger).get_log_level() == ESPHOME_LOG_LEVEL_DEBUG;'
+    turn_on_action:
+      - logger.set_level: DEBUG
+      - logger.log:
+          level: ${default_log_level}
+          format: "DEBUG logging enabled. Will revert to ${default_log_level} in ${toggle_log_level_timeout_hours} hours or on reboot."
+      - delay: ${toggle_log_level_timeout_hours}h
+      - switch.turn_off: id_switch_debug_logs_enabled
+
+    turn_off_action:
+      - logger.log:
+          level: ${default_log_level}
+          format: "Debug logging disabled. Back to ${default_log_level} level."
+      - logger.set_level: ${default_log_level}
 
 number:
   # Allows for setting brightness value without turning the light ON

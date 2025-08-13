@@ -40,18 +40,26 @@ Information on how to program is located on [Elektroda's forums](https://www.ele
 
 # How to use
 Include this package and populate the necessary variables.
+Syslog requires a time component. Use your own and define the substitution variable syslog_time_esphome_id to reference the instance ID.
 
 Example of a device YAML file:
 ```yaml
 substitutions:
   device_name: "my-dtr30-dimmer"
   device_friendly_name: "Dimmer"
-  api_key: "supersecretapikey"
-  ota_password: "otapsswd"
+  mqtt_broker_ip: "192.168.0.1"
+  mqtt_broker_port: "1883"
+  mqtt_username: "esphome"
+  mqtt_password: "esphome"
   hotspot_name: "DTR30-dimmer-AP"
   hotspot_password: !secret fallback_hotspot_password
-  log_level: "INFO"
   indicator_brightness_when_offline_percent: '100'
+  default_log_level: "INFO" # Optional, default to INFO
+  toggle_log_level_timeout_hours: "24"  # Optional, default to INFO
+  syslog_server_ip: "192.168.0.1"
+  syslog_server_port: "514"  # Optional, default to INFO
+  syslog_log_level: "INFO"  # Optional, default to INFO
+  syslog_time_esphome_id: "id_time_esphome_component"
 
 packages:
   remote_package_files:
@@ -59,6 +67,15 @@ packages:
     files: [.base.elegrp.dtr10_dtr30_template.yaml]  # optional; if not specified, all files will be included
     ref: master  # optional
     refresh: 1d  # optional
+
+time:
+  - platform: sntp
+    id: ${syslog_time_esphome_id}
+    timezone: America/Toronto
+    servers:
+     - 0.pool.ntp.org
+     - 1.pool.ntp.org
+     - 2.pool.ntp.org
 ```
 
 ## Customization
