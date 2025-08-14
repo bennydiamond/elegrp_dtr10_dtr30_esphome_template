@@ -275,6 +275,7 @@ switch:
   - platform: template
     name: Debug Log Level Enabled
     id: id_switch_debug_logs_enabled
+    entity_category: config
     restore_mode : ALWAYS_OFF
     lambda: 'return id(id_logger).get_log_level() == ESPHOME_LOG_LEVEL_DEBUG;'
     turn_on_action:
