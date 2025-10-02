@@ -10,7 +10,7 @@ esphome:
   friendly_name: ${device_friendly_name}
   project:
     name: elegrp.dtr10_dtr30_template
-    version: "1.4mqtt"
+    version: "1.5mqtt"
   platformio_options:
     build_flags:
       - -DLWIP_DHCP_DOES_ACD_CHECK=0 # fix for https://github.com/libretiny-eu/libretiny/issues/316
@@ -138,6 +138,9 @@ sensor:
             value: !lambda "return x;"
 
 binary_sensor:
+  - platform: status
+    name: "Status"
+    id: id_bin_status
   - platform: gpio
     name: "Paddle up"
     id: input_paddle_up_button
