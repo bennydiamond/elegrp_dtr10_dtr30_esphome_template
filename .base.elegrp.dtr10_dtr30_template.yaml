@@ -9,7 +9,7 @@ esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   project:
-    name: elegrp.dtr10_dtr30_template
+    name: ELEGRP.DTR10/DTR30
     version: "1.5mqtt"
   platformio_options:
     build_flags:
