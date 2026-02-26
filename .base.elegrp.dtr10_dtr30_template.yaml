@@ -1,16 +1,28 @@
 substitutions:
-  default_log_level: "INFO"
-  toggle_log_level_timeout_hours: "24"
-  syslog_server_port: "514"
-  syslog_log_level: "INFO"
-  syslog_time_esphome_id: "id_time_esphome_component"
-  
+  default_log_level: WARN
+  max_log_level: DEBUG
+  debug_toggle_switch_active_time_max: "24h"
+  uart_logger_baud_rate: "0" # Disable UART, required for TuyaMCU communication
+  default_syslog_server_ip: "192.168.0.15"
+  default_syslog_server_port: 514
+  syslog_log_level: DEBUG
+  ntp_timezone: "America/Toronto"
+  ntp_server_1: "192.168.0.3"
+  ntp_server_2: "192.168.0.250"
+  ntp_server_3: "0.pool.ntp.org"
+  api_reboot_timeout: 0s # Disable API reboot to prevent dimmer from turning off on reboots
+  indicator_brightness_when_offline_percent: 100
+  multiclick_min_length: "40ms" # Should be above 30ms
+  multiclick_max_length: "350ms"
+  longpress_min_length: "1000ms"
+  longpress_reboot_timeout: "10s"
+
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   project:
     name: ELEGRP.DTR10/DTR30
-    version: "1.5mqtt"
+    version: "1.6uyat"
   platformio_options:
     build_flags:
       - -DLWIP_DHCP_DOES_ACD_CHECK=0 # fix for https://github.com/libretiny-eu/libretiny/issues/316
@@ -18,56 +30,36 @@ esphome:
 bk72xx:
   board: cb2s
 
+packages:
+  remote_package_files:
+    url: https://github.com/bennydiamond/common_esphome_template/
+    files: [arduino.common.yaml]  # optional; if not specified, all files will be included
+    ref: master  # optional
+    refresh: 1h  # optional      
+
 external_components:
-  # use rtttl and dfplayer from ESPHome's dev branch in GitHub
   - source:
       type: git
-      url: https://github.com/bennydiamond/esphome
-      ref: tuya_cmd_public
-    components: [ tuya ]
-      
-# Enable Home Assistant API
-#api:
-#  id: id_esphome_api
-#  reboot_timeout: ${api_disconnect_reboot_timeout}
-#  # If device disconnected from API for 10 minutes, turn off the indicator LEDs.
-#  on_client_disconnected:
-#    if:
-#      condition:
-#        for:
-#          time: 10min
-#          condition:
-#            not:
-#              api.connected:
-#      then:
-#        - number.set:
-#            id: indicator_brightness
-#            value: ${indicator_brightness_when_offline_percent}
+      url: https://github.com/bennydiamond/esphome-external-uyat
+      ref: datapoint_sync_timeout_retries
 
-mqtt:
-  id: id_mqtt_broker
-  broker: ${mqtt_broker_ip}
-  port: ${mqtt_broker_port}
-  username: ${mqtt_username}
-  password: ${mqtt_password}
-  topic_prefix: "esphome/${device_name}"
-  discovery_unique_id_generator: mac
-  on_disconnect:
+# Enable Home Assistant API
+api:
+  id: id_esphome_api
+  reboot_timeout: ${api_reboot_timeout}
+  # If device disconnected from API for 10 minutes, turn off the indicator LEDs.
+  on_client_disconnected:
     if:
       condition:
         for:
           time: 10min
           condition:
             not:
-              mqtt.connected:
+              api.connected:
       then:
         - number.set:
             id: indicator_brightness
             value: ${indicator_brightness_when_offline_percent}
-
-ota:
-  - platform: esphome
-    id: id_esphome_ota
 
 captive_portal:
   id: id_captive_portal
@@ -75,32 +67,10 @@ captive_portal:
 web_server:
   id: id_web_server
   include_internal: True
-  
-mdns:
-  id: id_mdns
-  disabled: True
-  
+
 debug:
   id: id_debug
   update_interval: 30s
-
-# Enable logging
-logger:
-  id: id_logger
-  level: DEBUG
-  initial_level: ${default_log_level}
-  baud_rate: 0 # Disable log to uart because using Uart for TuyaMCU
-
-udp:
-  - id: id_udp_syslog_server
-    addresses: ${syslog_server_ip}
-
-syslog:
-  udp_id: id_udp_syslog_server
-  time_id: ${syslog_time_esphome_id} # must be defined in local yaml config
-  port: ${syslog_server_port}
-  strip: true # remove color code
-  level: ${syslog_log_level}
   
 uart:
   rx_pin: RX1
@@ -108,43 +78,32 @@ uart:
   baud_rate: 9600
 
 sensor:
-  - platform: wifi_signal
-    name: "WiFi RSSI"
-    update_interval: 60s
-    entity_category: diagnostic
-  - platform: internal_temperature
-    name: "CPU Temperature"
-    id: id_sensor_internal_temperature
-    entity_category: diagnostic
-  - platform: uptime
-    type: seconds
-    name: Uptime
-  - platform: debug
-    free:
-      name: "Heap Free"
-    loop_time:
-      name: "Loop Time"
-#  - platform: homeassistant
-#    name: "HA desired indicator brightness value"
-#    internal: True # Explicitely defined but set like that for obvious reasons!
-#    entity_id: input_number.dimmer_switch_indicator_level_main_rdc
-  - platform: mqtt_subscribe
+  - platform: homeassistant
     name: "HA desired indicator brightness value"
-    topic: ${indicator_brightness_topic}
+    internal: True
+    entity_id: ${indicator_brigtness_value_ha_entity_id}
     on_value: 
       then:
         - number.set:
             id: indicator_brightness
             value: !lambda "return x;"
+  - platform: internal_temperature
+    name: "CPU Temperature"
+    id: id_sensor_internal_temperature
+    entity_category: diagnostic
+  - platform: debug
+    free:
+      name: "Heap Free"
+    min_free:
+      name: "Heap Min Free"
+    loop_time:
+      name: "Loop Time"
 
 binary_sensor:
-  - platform: status
-    name: "Status"
-    id: id_bin_status
+  # Requires physical modification to the device to add a second button
   - platform: gpio
     name: "Paddle up"
     id: input_paddle_up_button
-    internal: True # not wired for now
     pin:
       number: P6
       inverted: True
@@ -158,34 +117,37 @@ binary_sensor:
           - ON for ${multiclick_min_length} to ${multiclick_max_length}
           - OFF for at least ${multiclick_max_length}
         then:
-          - mqtt.publish:
-              topic: esphome/${device_name}/button_pressed
-              payload: "up_singleclick"
+          - homeassistant.event:
+              event: esphome.button_pressed
+              data:
+                message: up_singleclick
       - timing:
           - ON for ${multiclick_min_length} to ${multiclick_max_length}
           - OFF for ${multiclick_min_length} to ${multiclick_max_length}
           - ON for ${multiclick_min_length} to ${multiclick_max_length}
           - OFF for at least ${multiclick_max_length}
         then:
-          - mqtt.publish:
-              topic: esphome/${device_name}/button_pressed
-              payload: "up_doubleclick"
+          - homeassistant.event:
+              event: esphome.button_pressed
+              data:
+                message: up_doubleclick
       - timing: 
           - ON for at least ${longpress_min_length}
         then:
-          - mqtt.publish:
-              topic: esphome/${device_name}/button_pressed
-              payload: "up_longpress"
+          - homeassistant.event:
+              event: esphome.button_pressed
+              data:
+                message: up_longpress
       - timing: 
           - ON for at least ${longpress_reboot_timeout}
         then:
           - button.press:
-              id: id_button_device_restart_safe_mode
+              id: id_button_safe_mode
 
+  # Requires physical modification to the device to add a second button
   - platform: gpio
     name: "Paddle down"
     id: input_paddle_down_button
-    internal: True # not wired for now
     pin:
       number: P23
       inverted: True
@@ -199,215 +161,227 @@ binary_sensor:
           - ON for ${multiclick_min_length} to ${multiclick_max_length}
           - OFF for at least ${multiclick_max_length}
         then:
-          - mqtt.publish:
-              topic: esphome/${device_name}/button_pressed
-              payload: "down_singleclick"
+          - homeassistant.event:
+              event: esphome.button_pressed
+              data:
+                message: down_singleclick
       - timing:
           - ON for ${multiclick_min_length} to ${multiclick_max_length}
           - OFF for ${multiclick_min_length} to ${multiclick_max_length}
           - ON for ${multiclick_min_length} to ${multiclick_max_length}
           - OFF for at least ${multiclick_max_length}
         then:
-          - mqtt.publish:
-              topic: esphome/${device_name}/button_pressed
-              payload: "down_doubleclick"
+          - homeassistant.event:
+              event: esphome.button_pressed
+              data:
+                message: down_doubleclick
       - timing: 
           - ON for at least ${longpress_min_length}
         then:
-          - mqtt.publish:
-              topic: esphome/${device_name}/button_pressed
-              payload: "down_longpress"
+          - homeassistant.event:
+              event: esphome.button_pressed
+              data:
+                message: down_longpress
       - timing: 
           - ON for at least ${longpress_reboot_timeout}
         then:
           - button.press:
-              id: id_button_device_restart
+              id: id_button_restart
 
-
-#text_sensor:
-#  - platform: tuya
-#    name: "TuyaMCU Version"
-#    sensor_datapoint: 113
-#    entity_category: diagnostic
-#  - platform: tuya
-#    name: "Hardware Version"
-#    sensor_datapoint: 109
-#    entity_category: diagnostic
-#  - platform: wifi_info
-#    ssid:
-#      name: "WiFi SSID"
-#      entity_category: diagnostic
-#    ip_address:
-#      name: "IP Address"
-#      entity_category: diagnostic
-#    mac_address:
-#      name: "MAC Address"
-#      entity_category: diagnostic
-#  - platform: template
-#    name: "Wifi Channel"
-#    entity_category: diagnostic
-#    lambda: |-
-#      std::string out;
-#      char buffer[10];
-#      snprintf(buffer, 10, "%u", WiFi.channel());
-#      out.append(buffer);
-#      return out;
-#    update_interval: 60s
-
-button:
-  - platform: restart
-    name: "Device Restart"
-    id: id_button_device_restart
-  - platform: safe_mode
-    name: "Device Restart (Safe Mode)"
-    id: id_button_device_restart_safe_mode
-
-tuya:
+uyat:
   # DPIDs processed from schema model: 000004ngxw
   id: id_tuya_device
+  time_id: id_sntp_time
+  ignore_mcu_update_on_datapoints: 
+    - 6 # Countdown 1
+    - 109 # unknown string
+    - 110 # Countdown Action
+    - 111 # Countdown Total
+    - 113 # unknown string
+#  diagnostics:
+#    product:
+#      name: "Product"
+#    num_garbage_bytes:
+#      name: "Garbage bytes"
+#    unknown_commands:
+#      name: "Unknown commands"
+#    unknown_extended_commands:
+#      name: "Unknown extended commands"
+#    unhandled_datapoints:
+#      name: "Unhandled datapoints"
+#    pairing_mode:
+#      name: "Pairing mode"
+
 
 switch:
-  #- platform: tuya
+  #- platform: uyat
   #  switch_datapoint: 110
   #  name: Countdown Action
-  - platform: tuya
-    switch_datapoint: 114
+  - platform: uyat
     name: "Set Brightness Min"
     id: id_switch_set_brightness_min
     entity_category: config
-  - platform: template
-    name: Debug Log Level Enabled
-    id: id_switch_debug_logs_enabled
-    entity_category: config
-    restore_mode : ALWAYS_OFF
-    lambda: 'return id(id_logger).get_log_level() == ESPHOME_LOG_LEVEL_DEBUG;'
-    turn_on_action:
-      - logger.set_level: DEBUG
-      - logger.log:
-          level: ${default_log_level}
-          format: "DEBUG logging enabled. Will revert to ${default_log_level} in ${toggle_log_level_timeout_hours} hours or on reboot."
-      - delay: ${toggle_log_level_timeout_hours}h
-      - switch.turn_off: id_switch_debug_logs_enabled
-
-    turn_off_action:
-      - logger.log:
-          level: ${default_log_level}
-          format: "Debug logging disabled. Back to ${default_log_level} level."
-      - logger.set_level: ${default_log_level}
+    datapoint:
+      number: 114
+      retries:
+        enabled: true
+        count: 3
+        timeout: 600ms
 
 number:
   # Allows for setting brightness value without turning the light ON
-  - platform: tuya
-    number_datapoint: 2
+  - platform: uyat
     name: "Dimmer Brightness control"
     id: dimmer_brightness_control
     min_value: 1
     max_value: 100
     step: 1
-    # TuyaMCU scale is 10 to 1000
-    multiply: 10 
-  - platform: tuya
-    number_datapoint: 108
+    multiplier: 10 # TuyaMCU scale is 10 to 1000
+    datapoint:
+      number: 2
+      # TuyaMCU scale is 10 to 1000
+      # retries already handled by light component, so disable here to avoid double retries
+  - platform: uyat
     name: "Longpress Brightness"
     id: id_number_longpress_brightness
+    entity_category: config
     min_value: 10
     max_value: 1000
     step: 1
-    entity_category: config
-  - platform: tuya
-    number_datapoint: 101
+    datapoint:
+      number: 108
+      retries:
+        enabled: true
+        count: 3
+        timeout: 600ms
+  - platform: uyat
     name: "Indicator Brightness"
     id: indicator_brightness
+    entity_category: config
     min_value: 0
     max_value: 100
     step: 1
-    entity_category: config
-  - platform: tuya
-    number_datapoint: 5
+    datapoint: 
+      number: 101
+      retries:
+        enabled: true
+        count: 3
+        timeout: 600ms
+  - platform: uyat
     name: "Brightness Max"
     id: id_number_brightness_max
+    entity_category: config
     min_value: 550
     max_value: 1000
     step: 1
-    entity_category: config
+    datapoint: 
+      number: 5
+      # Set Brightness Max does not ack its datapoint update. We're using retries anyway to ensure value is sent to the device.
+      retries:
+        enabled: true
+        count: 2
+        timeout: 200ms
   # User must activate "Set Brightness Min" switch before changing the value of this
-  - platform: tuya
-    number_datapoint: 3
+  - platform: uyat
     name: "Brightness Min"
     id: id_number_brightness_min
+    entity_category: config
     min_value: 0
     max_value: 500
     step: 1
-    entity_category: config
-  #- platform: tuya
-  #  number_datapoint: 6
+    datapoint: 
+      number: 3
+      retries:
+        enabled: true
+        count: 3          # retry up to 3 times
+        timeout: 600ms    # wait 300ms for MCU acknowledgement
+  #- platform: uyat
   #  name: "Countdown 1"
   #  unit_of_measurement: S
-  #  min_value: 0
-  #  max_value: 86399
-  #  step: 1
-  #- platform: tuya
-  #  number_datapoint: 111
+  #  datapoint: 
+  #    number: 6
+  #    min_value: 0
+  #    max_value: 86399
+  #    step: 1
+  #- platform: uyat
   #  name: "Countdown Total"
   #  unit_of_measurement: S
-  #  min_value: 0
-  #  max_value: 86399
-  #  step: 1
+  #  datapoint: 
+  #    number: 111
+  #    min_value: 0
+  #    max_value: 86399
+  #    step: 1
 
 select:
-  - platform: tuya
-    enum_datapoint: 103
+  - platform: uyat
     name: "Fade On Speed"
     id: id_select_fade_on_speed
+    entity_category: config
     optimistic: true
     options:
       0: "Immediate"
       1: "Fast"   # 1s
       2: "Medium" # 5s
       3: "Slow"   # 15s
-    entity_category: config
-  - platform: tuya
-    enum_datapoint: 104
+    datapoint: 
+      number: 103
+      retries:
+        enabled: true
+        count: 3
+        timeout: 600ms
+  - platform: uyat
     name: "Fade Off Speed"
     id: id_select_fade_off_speed
+    entity_category: config
     optimistic: true
     options:
       0: "Immediate"
       1: "Fast"   # 1s
       2: "Medium" # 5s
       3: "Slow"   # 15s
-    entity_category: config
-  - platform: tuya
-    enum_datapoint: 4
+    datapoint: 
+      number: 104
+      retries:
+        enabled: true
+        count: 3
+        timeout: 600ms
+  - platform: uyat
     name: "Bulb Type"
     id: id_select_bulb_type
+    entity_category: config
     optimistic: true
     options:
       0: "Cfl"
       1: "Incandescent"
       2: "Halogen"
       3: "Led"
-    entity_category: config
+    datapoint: 
+      number: 4
+      retries:
+        enabled: true
+        count: 3
+        timeout: 600ms
 
 light:
-  - platform: tuya
+  - platform: uyat
+    type: dimmer
     name: "Dimmer"
     id: dimmer
-    dimmer_datapoint: 2
-    min_value_datapoint: 2
-    max_value: 1000
-    switch_datapoint: 1
-
-interval:
-  # Workaround (attempt) for when ESPHome seemingly stops sending WIFI status message to TuyaMCU and status LED turns blinking red.
-  - interval: 20s
-    startup_delay: 1min
-    then:
-      - lambda: id(id_tuya_device).force_send_wifi_status(0x04);
-  # Workaround for rare occasions whenre indicator brightness is not being taken in by TuyaMCU
-  - interval: 1min
-    startup_delay: 1min
-    then:
-      - lambda: |-
-          id(id_tuya_device).force_set_integer_datapoint_value(101, id(indicator_brightness).state);
-          
+    dimmer:
+      datapoint: 2
+      min_value_datapoint: 2
+      min_value: 1
+      max_value: 1000
+      inverted: false
+      retries:
+        enabled: true
+        count: 3
+        timeout: 1000ms
+      
+    switch:
+      datapoint: 1
+      inverted: false
+      retries:
+        enabled: true
+        count: 3
+        timeout: 300ms
